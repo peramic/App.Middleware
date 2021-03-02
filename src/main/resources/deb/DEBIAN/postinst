@@ -1,0 +1,10 @@
+#!/bin/sh
+
+URL="http://admin@localhost/rest/apps"
+PKG="10_havis.middleware.jar 50_havis.middleware.subscriber.sql-subscriberconnector.jar 50_havis.middleware.subscriber.queue-subscriberconnector.jar 50_OBIDISC4J-linux-arm.jar 50_OBIDISC4J.jar 50_havis.middleware.reader.rf-r-readerconnector.jar 50_havis.middleware.reader.rf-r300-readerconnector.jar 50_havis.middleware.reader.llrp-service.jar 50_havis.middleware.reader.llrp-connector.jar 50_havis.net.rest.middleware.jar"
+
+for pkg in $PKG; do
+  busybox wget $URL/$pkg/plug -q --spider
+done
+
+exit 0

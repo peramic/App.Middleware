@@ -1,0 +1,14 @@
+The following libraries which are provided within this open source project are part of the FEIG ELECTRONIC GmbH product line.
+
+· OBIDISC4J-linux-amd64.jar
+· OBIDISC4J-linux-arm.jar
+· libFedmIscCore.so.5.5.2
+· libFedmIscService.so.8.6.1
+· libfecom.so.3.4.0
+· libfefu.so.2.2.0
+· libfeisc.so.7.8.0
+· libfetcl.so.2.4.0
+· libfetcp.so.3.1.0
+· libfeusb.so.6.0.2
+
+FEIG ELECTRONIC hereby grants a license to use these libraries as part of the open source project in combination with products supplied by FEIG ELECTRONIC or by the HARTING Technology Group. This license does not in any way authorize the usage of the libraries outside of the open source project. Furthermore, this license does not grant any claims for support, maintenance or any kind of warranty.

@@ -1,0 +1,207 @@
+<?xml version="1.0"?>
+<project name="havis.middleware" default="publish" xmlns:ivy="antlib:org.apache.ivy.ant" xmlns:if="ant:if" xmlns:unless="ant:unless">
+
+	<property file="${basedir}/build.properties" />
+	<property name="basename" value="${ant.project.name}" />
+	<property name="build.dir" location="${basedir}/target" />
+	<property name="build.dir.classes" location="${build.dir}/classes" />
+	<property name="lib.dir" location="${basedir}/lib" />
+	<property name="resources.dir" location="${basedir}/src/main/resources" />
+	<property name="resources.dir.classpath" location="${resources.dir}/classpath" />
+	<property name="src.main.dir" location="${basedir}/src/main/java" />
+	<property name="dst.dir" location="${build.dir}/deb/opt/havis-apps" />
+
+	<property file="${resources.dir}/MANIFEST.MF" prefix="manifest" />
+	<property file="${resources.dir}/build.properties" />
+
+	<path id="build.classpath">
+		<fileset dir="${lib.dir}" includes="havis.net.ui.middleware-*.jar" />
+		<fileset dir="${lib.dir}" excludes="havis.net.ui.middleware-*.jar" />
+	</path>
+
+	<filterset id="manifest" filtersfile="${resources.dir}/MANIFEST.MF" />
+
+	<property name="javac.version" value="8" />
+
+	<!-- Checks if the build.properties file exists 
+         and prints an error message if the file does not exist -->
+	<target name="check.build.properties">
+		<condition property="ivy.resolver" else="local">
+			<isset property="ivy.resolver" />
+		</condition>
+		<condition property="arch" value="amd64">
+			<matches pattern="^linux-amd64$" string="${platform}" />
+		</condition>
+		<condition property="arch" value="armhf">
+			<matches pattern="^linux-arm$" string="${platform}" />
+		</condition>
+
+		<fail message="Missing property 'api.url'. Does 'build.properties' file exists?" unless="api.url" />
+		<fail message="Missing property 'ivy.url'. Does 'build.properties' file exists?" unless="ivy.url" />
+		<fail message="Missing property 'platform'. Does 'build.properties' file exists?" unless="platform" />
+	</target>
+
+	<target name="clean-cache" description="Cleans ivy cache">
+		<ivy:cleancache />
+	</target>
+
+	<target name="clean" description="Cleans the project">
+		<delete dir="${build.dir}" />
+		<delete dir="${lib.dir}" />
+	</target>
+
+	<target name="clean-all" depends="clean, clean-cache" description="Cleans the project and ivy cache" />
+
+	<target name="retrieve" depends="check.build.properties" description="">
+		<ivy:retrieve log="quiet" conf="default" />
+	</target>
+
+	<!-- Compiles the java source files -->
+	<target name="compile" depends="retrieve">
+		<mkdir dir="${build.dir.classes}" />
+		<javac srcdir="${src.main.dir}" destdir="${build.dir.classes}" release="${javac.version}" debug="${javac.debug}" includeantruntime="false">
+			<classpath>
+				<!-- build libraries -->
+				<path refid="build.classpath" />
+			</classpath>
+		</javac>
+	</target>
+
+	<!-- Compiles the GWT modules to javascript Parameter: "target.dir", "target.file" -->
+	<target name="compile-gwt" depends="compile">
+		<mkdir dir="${dst.dir}/www" />
+		<!-- create javascript for client with GWT -->
+		<java failonerror="true" fork="true" classname="com.google.gwt.dev.Compiler">
+			<classpath>
+				<pathelement location="${src.main.dir}" />
+				<path refid="build.classpath" />
+			</classpath>
+			<jvmarg value="-Xmx512M" />
+			<arg line="-style ${gwt.style}" if:set="gwt.style" />
+			<arg value="-strict" />
+			<arg value="-war" />
+			<arg value="${dst.dir}/www" />
+			<arg line="${gwt.modules}" />
+		</java>
+
+		<delete dir="${dst.dir}/gwt-unitCache" />
+		<delete dir="${dst.dir}/www/WEB-INF" />
+	</target>
+
+	<target name="deb" depends="compile-gwt" description="Creates a TAR containing the running RF-R350 platform">
+
+		<ivy:retrieve pattern="${build.dir}/deb/usr/lib/[artifact].[ext]" conf="lib" />
+		<apply executable="ln" dir="${build.dir}/deb/usr/lib" dest="${build.dir}/deb/usr/lib" relative="true" parallel="false">
+			<arg value="-s" />
+			<srcfile />
+			<targetfile />
+			<fileset dir="${build.dir}/deb/usr/lib" />
+			<mapper type="regexp" from="(.*\.so\.[0-9]+)\.[0-9]+\.[0-9]+$" to="\1"/>
+		</apply>
+		<apply executable="ln" dir="${build.dir}/deb/usr/lib" dest="${build.dir}/deb/usr/lib" relative="true" parallel="false">
+			<arg value="-s" />
+			<srcfile />
+			<targetfile />
+			<fileset dir="${build.dir}/deb/usr/lib" />
+			<mapper type="regexp" from="(.*\.so)\.[0-9]+$" to="\1"/>
+		</apply>
+
+		<copy todir="${build.dir}/deb">
+			<fileset dir="${resources.dir}/deb/" includes="**/*.html DEBIAN/*" />
+			<filterset refid="manifest" />
+			<filterset>
+				<filter token="ARCH" value="${arch}" />
+			</filterset>
+		</copy>
+
+		<copy todir="${build.dir}/deb">
+			<fileset dir="${resources.dir}/deb/" excludes="**/*.html DEBIAN/*" />
+		</copy>
+
+		<ivy:resolve file="ivy.xml" conf="runtime" />
+		<ivy:retrieve pattern="${dst.dir}/bundle/[artifact].[ext]" conf="runtime">
+			<firstmatchmapper>
+				<globmapper from="${dst.dir}${file.separator}bundle${file.separator}*.jar" to="${dst.dir}/bundle/50_*.jar" />
+			</firstmatchmapper>
+		</ivy:retrieve>
+
+		<jar jarfile="${dst.dir}/bundle/10_${basename}.jar" manifest="${resources.dir}/MANIFEST.MF" />
+
+		<chmod perm="755" type="file">
+			<fileset dir="${build.dir}/deb/DEBIAN">
+				<include name="preinst" />
+				<include name="postinst" />
+				<include name="prerm" />
+				<include name="postrm" />
+			</fileset>
+		</chmod>
+
+		<mkdir dir="${build.dir}/deb/usr/share/doc" />
+
+		<mkdir dir="${build.dir}/tar" />
+		<exec executable="fakeroot">
+			<arg value="dpkg" />
+			<arg value="-b" />
+			<arg value="${build.dir}/deb" />
+			<arg value="${build.dir}/tar/${basename}.deb" />
+		</exec>
+		<echo file="${build.dir}/${basename}_${manifest.Bundle-Version}_${arch}.dsc" append="false">Format: 3.0 (native)${line.separator}Source: ${basename}${line.separator}Architecture: ${arch}${line.separator}Version: ${manifest.Bundle-Version}</echo>
+	</target>
+
+	<target name="app" depends="deb">
+		<ivy:retrieve pattern="${build.dir}/tar/[artifact].[ext]" conf="deb" log="quiet" />
+		<copy todir="${build.dir}">
+		  <fileset dir="${build.dir}/tar" />
+		</copy>
+		<exec executable="fakeroot">
+			<arg value="tar" />
+			<arg value="cfC" />
+			<arg value="${build.dir}/${basename}.tar" />
+			<arg value="${build.dir}/tar" />
+			<arg value="." />
+		</exec>
+		<concat destfile="${build.dir}/${basename}.app" binary="yes">
+			<fileset file="${resources.dir}/make" />
+			<fileset file="${build.dir}/${basename}.tar" />
+		</concat>
+	</target>
+
+	<macrodef name="extract">
+		<attribute name="name" />
+		<sequential>
+			<local name="extract.deb" />
+			<condition property="extract.deb">
+				<matches pattern="\.deb$" string="@{name}" />
+			</condition>
+			<exec executable="bash" dir="${build.dir}" unless:set="extract.deb">
+				<env key="TARGET" value="${build.dir}/deb" />
+				<arg value="@{name}" />
+				<arg value="extract" />
+			</exec>
+			<exec executable="dpkg" if:set="extract.deb">
+				<arg value="-x" />
+				<arg value="${build.dir}/@{name}" />
+				<arg value="${build.dir}/deb" />
+			</exec>
+		</sequential>
+	</macrodef>
+
+	<target name="standalone" depends="deb">
+		<ivy:retrieve pattern="${build.dir}/[artifact].[ext]" conf="standalone" />
+		<extract name="havis-apps.deb" />
+		<extract name="havis.middleware.tdt.deb" />
+		<extract name="havis.middleware.utils.deb" />
+		<extract name="havis.middleware.ale-api.deb" />
+		<extract name="havis.middleware.ale-impl.deb" />
+		<available file="${user.home}/.felix" property="standalone.felix.present" />
+		<copy file="${user.home}/.felix" tofile="${build.dir}/deb/etc/default/felix" overwrite="true" if:set="standalone.felix.present" />
+	</target>
+
+	<target name="publish" depends="app" description="Publishes the TAR to the repository">
+		<ivy:resolve file="${resources.dir}/ivy.xml" />
+
+		<ivy:publish resolver="${ivy.resolver}" pubrevision="${manifest.Bundle-Version}" status="integration" overwrite="true">
+			<artifacts pattern="${build.dir}/[artifact].[ext]" />
+		</ivy:publish>
+	</target>
+</project>

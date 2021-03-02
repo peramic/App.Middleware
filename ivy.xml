@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ivy-module version="2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
+
+	<info organisation="havis/net" module="rf-r300" default="true" />
+
+	<configurations>
+		<conf name="default" />
+		<conf name="runtime" />
+		<conf name="deb" />
+		<conf name="standalone" />
+		<conf name="lib" />
+	</configurations>
+
+	<dependencies>
+
+		<dependency org="havis/net" name="apps-${platform}" rev="${havis.version}" conf="standalone->default" />
+
+		<dependency org="javax/ws/rs" name="javax.ws.rs-api" rev="${jaxws-api.version}" conf="default->default,src" />
+
+		<!-- middleware -->
+		<dependency org="havis/middleware" name="ale-impl" rev="${havis.version}" conf="deb,standalone->deb" transitive="false" />
+		<dependency org="havis/middleware" name="ale-api" rev="${havis.version}" conf="deb,standalone->deb;default->default,src" transitive="false" />
+		<dependency org="havis/middleware" name="tdt" rev="${havis.version}" conf="deb,standalone->deb" transitive="false" />
+		<dependency org="havis/middleware" name="utils" rev="${havis.version}" conf="deb,standalone->deb" transitive="false" />
+
+		<dependency org="com/fasterxml/jackson/core" name="jackson-databind" rev="${jackson.version}" conf="default" />
+
+		<dependency org="havis/net/rest" name="shared" rev="${havis.version}" conf="default->default,src" />
+		<dependency org="havis/net/rest" name="middleware" rev="${havis.version}" conf="runtime->default;default->default,src" transitive="false" />
+
+		<dependency org="havis/net/ui" name="shared" rev="${havis.version}" conf="default->default,src" />
+		<dependency org="havis/net/ui" name="middleware" rev="${havis.version}" conf="default->default,src" />
+
+		<dependency org="havis/middleware/reader/rf-r" name="rf-r-readerconnector" rev="${havis.version}" conf="runtime->default" transitive="false" />
+	        <dependency org="havis/middleware/reader/rf-r" name="rf-r300-readerconnector" rev="${havis.version}" conf="runtime->default" transitive="false" />
+		<dependency org="havis/middleware/reader/llrp" name="llrp-connector" rev="${havis.version}" conf="runtime->default" transitive="false" />
+		<dependency org="havis/middleware/reader/llrp" name="llrp-service" rev="${havis.version}" conf="runtime->default" transitive="false" />
+		<dependency org="havis/middleware/subscriber" name="queue-subscriberconnector" rev="${havis.version}" conf="runtime->default" transitive="false" />
+		<dependency org="havis/middleware/subscriber" name="sql-subscriberconnector" rev="${havis.version}" conf="runtime->default" transitive="false" />
+
+		<!-- FEIG -->
+		<dependency org="de/feig" name="obid-${platform}" rev="${feig.version}" conf="runtime->default;lib" />
+		<dependency org="de/feig" name="obid" rev="${feig.version}" conf="runtime->default" />
+
+		<!-- gwt -->
+		<dependency org="com/google/gwt" name="gwt-dev" rev="${gwt.version}" conf="default" />
+		<dependency org="com/google/gwt" name="gwt-user" rev="${gwt.version}" conf="default" />
+		<dependency org="com/google/gwt" name="gwt-elemental" rev="${gwt.version}" conf="default" />
+		<dependency org="com/google/gwt/inject" name="gin" rev="${gin.version}" conf="default" />
+		<dependency org="org/fusesource/restygwt" name="restygwt" rev="${restygwt.version}" conf="default" />
+		<dependency org="javax/validation" name="validation-api" rev="${javax-validation-api.version}" conf="default->default,src" />
+
+		<conflict org="javax/validation" module="validation-api" rev="1.0.0.GA" />
+
+	</dependencies>
+
+</ivy-module>

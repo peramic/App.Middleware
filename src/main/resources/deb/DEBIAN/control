@@ -1,0 +1,6 @@
+Package: @Bundle-SymbolicName@
+Version: @Bundle-Version@
+Architecture: @ARCH@
+Depends: havis.middleware.ale-impl, havis.middleware.ale-api, havis.middleware.utils, havis.middleware.tdt
+Maintainer: @Bundle-Vendor@
+Description: @Bundle-Name@
