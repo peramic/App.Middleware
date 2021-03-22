@@ -1,6 +1,6 @@
 Bundle-Name: Ha-VIS Middleware
 Bundle-SymbolicName: havis.middleware
-Bundle-Version: 2.7.0
+Bundle-Version: 2.7.1
 Application-Name: Middleware
 Implementation-Version: 2.7
 Bundle-ManifestVersion: 2
